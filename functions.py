@@ -1,4 +1,5 @@
 import json
+import itertools
 
 weighting = {"red": 0.9, "green": 0.5}
 gene_types = {"red": ["x", "w"], "green": ["y","g","h"]}
@@ -6,6 +7,27 @@ goal = {"w":0, "x":0, "y":4, "g":2, "h":0}
 valid_genes = "wxghy"
 stored_clones = []
 save_route = "data.txt"
+
+def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
+    """
+    Call in a loop to create terminal progress bar
+    @params:
+        iteration   - Required  : current iteration (Int)
+        total       - Required  : total iterations (Int)
+        prefix      - Optional  : prefix string (Str)
+        suffix      - Optional  : suffix string (Str)
+        decimals    - Optional  : positive number of decimals in percent complete (Int)
+        length      - Optional  : character length of bar (Int)
+        fill        - Optional  : bar fill character (Str)
+        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
+    """
+    percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
+    filledLength = int(length * iteration // total)
+    bar = fill * filledLength + '-' * (length - filledLength)
+    print(f'\r{prefix} |{bar}| {percent}% {suffix}', end = printEnd)
+    # Print New Line on Complete
+    if iteration == total: 
+        print()
 
 def store_clone():
                 
@@ -39,9 +61,11 @@ def read_file():
     with open(save_route, "r") as f:
         stored_clones = json.load(f)
 
-def check_result(clones_to_check):
+def check_result(clones_to_check, should_print = False):
 
+    possible_failures = 0
     def choose_gene(clone_to_choose):
+        possible_failures_inside = 0
         global goal
         clone_result = clone_to_choose
         amounts = base_dict.copy()
@@ -57,7 +81,9 @@ def check_result(clones_to_check):
                         selected_gene = priority[item]
                         amounts[priority[item]] += 1
                         clone_result[index] = selected_gene
-                        print(f"You will have to attempt the cross breed until gene {index+1} comes out as {priority[item]}.")
+                        if should_print != False:
+                            print(f"You will have to attempt the cross breed until gene {index+1} comes out as {priority[item]}.")
+                        possible_failures_inside += 1
                         break
         missing_result = False
         for index, gene in enumerate(clone_to_choose):
@@ -72,9 +98,13 @@ def check_result(clones_to_check):
                             selected_gene = priority[item]
                             amounts[priority[item]] += 1
                             clone_result[index] = selected_gene
-                            print(f"You will have to attempt the cross breed until gene {index+1} comes out as {priority[item]}.")
+                            if should_print != False:
+                                print(f"You will have to attempt the cross breed until gene {index+1} comes out as {priority[item]}.")
+                            possible_failures_inside += 1
                             break
-        return(clone_result)
+        if should_print != False:
+            print(clone_result)
+        return(clone_result, possible_failures_inside)
 
     global weighting
     global gene_types
@@ -119,9 +149,47 @@ def check_result(clones_to_check):
             to_add = to_add[:-1]
             result.append(to_add)
     if need_to_choose == True:
-        result = choose_gene(result)
-    return(result)
+        result, possible_failures = choose_gene(result)
+    if should_print == False:
+        return(result, possible_failures)
+    else:
+        return(result)
 
 #print(check_result([["g", "w", "w", "y", "h", "h"], ["y", "w", "g", "y", "h", "y"], ["h", "y", "g", "x", "g", "x"]]))
 # should return ['y/g/h', 'w', 'g', 'y', 'h', 'x']
 # with priority check result is ['y', 'w', 'g', 'y', 'h', 'x']
+
+def iterate_over_current_list():
+    global goal
+    read_file()
+    combinations_to_check = []
+    for clone_amount in range(2, 6):
+        for combination in itertools.combinations(stored_clones, clone_amount):
+            combinations_to_check.append(combination)
+    ordered_goal = []
+    for gene in goal:
+        if goal[gene] > 0:
+            for repetition in range(goal[gene]):
+                ordered_goal.append(gene)
+
+    ordered_goal.sort()
+    achieved_goal_with = []
+    number_of_failures = []
+    print(f"Checking {len(combinations_to_check)} possible combinations...")
+
+    for index, combination in enumerate(combinations_to_check):
+        printProgressBar(index + 1, len(combinations_to_check), prefix = 'Checked combinations:', suffix = 'Complete', length=20, printEnd="\r")
+        current_result, current_amount_of_failures = check_result(combination)
+        current_result.sort()
+        if current_result == ordered_goal:
+            achieved_goal_with.append(combination)
+            number_of_failures.append(current_amount_of_failures)
+    
+    print()
+    print("Best result foound with clones:")
+    min_failures = min(number_of_failures)
+    index_of_min_failures = number_of_failures.index(min_failures)
+    for clones in achieved_goal_with[index_of_min_failures]:
+        print(clones)
+    print("Cross-breeding result: ")
+    print(check_result(achieved_goal_with[index_of_min_failures], True))
