@@ -6,11 +6,12 @@ while True:
     print("")
     print("1. Add clone.")
     print("2. Calculate crossbreed.")
-    print("3. Help and information.")
+    print("3. Change goal.")
+    print("4. Help and information.")
     print("")
     try:
-        selection = int(input("Input menu selection (1-3): "))
-        if selection > 3 or selection < 1:
+        selection = int(input("Input menu selection (1-4): "))
+        if selection > 4 or selection < 1:
             raise ValueError
         print("")
     except ValueError:
@@ -20,5 +21,7 @@ while True:
         store_clone()
     elif selection == 2:
         iterate_over_current_list()
+    elif selection == 3:
+        change_goal()
     else:
         print_help()

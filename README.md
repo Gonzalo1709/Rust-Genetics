@@ -4,7 +4,7 @@
  This is a tool meant to store your available Rust plant genes and attempt to get an ideal clone.
  
  The ideal clone is by default any clone with 4 y's and 2 g's. Order doesn't matter.
- To change the ideal crop change the numbers on the 'goal' dictionary variable at the top of the 'functions.py' file.
+ You can easily change the goal with the third option in the menu.
  
  This currently works with any crop as genetics work the same for them all.
  To get more genes just plant seeds from the desired crop and when it grows hold e on it and there should be an option to clone the plant.

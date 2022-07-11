@@ -4,20 +4,63 @@ import os
 
 weighting = {"red": 0.9, "green": 0.5}
 gene_types = {"red": ["x", "w"], "green": ["y","g","h"]}
-goal = {"w":0, "x":0, "y":4, "g":2, "h":0}
 valid_genes = "wxghy"
 stored_clones = []
 save_route = "data.txt"
+goal_file = "goal.txt"
 
 if not os.path.exists(save_route):
 	file = open(save_route, 'w')
 	file.close
+if not os.path.exists(goal_file):
+    file = open(goal_file, 'w')
+    file.close
+    goal = {"w":0, "x":0, "y":4, "g":2, "h":0}
+    with open(goal_file, "w", encoding='utf-8') as f:
+        json.dump(goal, f, ensure_ascii=False, indent=4)
+
+goal = {}
+with open(goal_file, "r") as f:
+    goal = json.load(f)
+
+def change_goal():
+    global goal
+    ordered_goal = []
+    for gene in goal:
+        if goal[gene] > 0:
+            for repetition in range(goal[gene]):
+                ordered_goal.append(gene)
+    ordered_goal.sort()
+    print(f"Current goal is {ordered_goal}")
+    global valid_genes
+    while True:
+        try:
+            new_goal = input("Input new goal in the same format (6 genes, order doens't matter ie. GGYYYY): ")
+            new_goal = new_goal.lower()
+            clone = []
+            for gene in new_goal:
+                if gene not in valid_genes:
+                    raise ValueError
+                else:
+                    clone.append(gene)
+            if len(clone) != 6:
+                raise ValueError
+            else:
+                break
+        except ValueError:
+            print("Invalid clone format.")
+            print('Input goal as 6 letters ie. GGYYYY')
+    new_goal = {"w":0, "x":0, "y":0, "g":0, "h":0}
+    for gene in clone:
+        new_goal[gene] += 1
+    with open(goal_file, "w") as f:
+        json.dump(new_goal, f, ensure_ascii=False, indent=4)
+    goal = new_goal
 
 def print_help():
     print("This is a tool meant to store your available Rust plant genes and attempt to get an ideal clone.")
     print("")
     print("The ideal clone is by default any clone with 4 y's and 2 g's. Order doesn't matter.")
-    print("To change the ideal crop change the numbers on the 'goal' dictionary variable at the top of the 'functions.py' file.")
     print("")
     print("This currently works with any crop as genetics work the same for them all.")
     print("To get more genes just plant seeds from the desired crop and when it grows hold e on it and there should be an option to clone the plant.")
