@@ -1,5 +1,6 @@
 import json
 import itertools
+import os
 
 weighting = {"red": 0.9, "green": 0.5}
 gene_types = {"red": ["x", "w"], "green": ["y","g","h"]}
@@ -8,19 +9,26 @@ valid_genes = "wxghy"
 stored_clones = []
 save_route = "data.txt"
 
+if not os.path.exists(save_route):
+	file = open(save_route, 'w')
+	file.close
+
+def print_help():
+    print("This is a tool meant to store your available Rust plant genes and attempt to get an ideal clone.")
+    print("")
+    print("The ideal clone is by default any clone with 4 y's and 2 g's. Order doesn't matter.")
+    print("To change the ideal crop change the numbers on the 'goal' dictionary variable at the top of the 'functions.py' file.")
+    print("")
+    print("This currently works with any crop as genetics work the same for them all.")
+    print("To get more genes just plant seeds from the desired crop and when it grows hold e on it and there should be an option to clone the plant.")
+    print("")
+    print("It is recommended only to clone plants with 4 or more green clones.")
+    print("Once you've gotten around 10 clones you can start calculating the crossbreed and hopefully get a desired clone.")
+    print("")
+    print("Sometimes you'll get a 50/50 chance to get a specific gene, you'll have to crossbreed over and over again until you get the desired gene.")
+    print("This program attempts to give you the combination of clones with the least possible 50/50's.")
+
 def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, length = 100, fill = '█', printEnd = "\r"):
-    """
-    Call in a loop to create terminal progress bar
-    @params:
-        iteration   - Required  : current iteration (Int)
-        total       - Required  : total iterations (Int)
-        prefix      - Optional  : prefix string (Str)
-        suffix      - Optional  : suffix string (Str)
-        decimals    - Optional  : positive number of decimals in percent complete (Int)
-        length      - Optional  : character length of bar (Int)
-        fill        - Optional  : bar fill character (Str)
-        printEnd    - Optional  : end character (e.g. "\r", "\r\n") (Str)
-    """
     percent = ("{0:." + str(decimals) + "f}").format(100 * (iteration / float(total)))
     filledLength = int(length * iteration // total)
     bar = fill * filledLength + '-' * (length - filledLength)
@@ -29,13 +37,27 @@ def printProgressBar (iteration, total, prefix = '', suffix = '', decimals = 1, 
     if iteration == total: 
         print()
 
+def read_file():
+    global stored_clones
+    try:
+        with open(save_route, "r") as f:
+            stored_clones = json.load(f)
+    except json.decoder.JSONDecodeError:
+        print("Your save file is empty!")
+
+def save_to_file():
+    global stored_clones
+    with open(save_route, "w", encoding='utf-8') as f:
+        json.dump(stored_clones, f, ensure_ascii=False, indent=4)
+
 def store_clone():
-                
     global stored_clones
     global valid_genes
+    print('Input clone as 6 letters ie. GGYYYY')
     while True:
         try:
             to_save = str(input("Enter clone genetics to store: "))
+            to_save = to_save.lower()
             clone = []
             for gene in to_save:
                 if gene not in valid_genes:
@@ -50,16 +72,7 @@ def store_clone():
             print("Invalid clone format.")
             print('Input clone as 6 letters ie. GGYYYY')
     stored_clones.append(clone)
-
-def save_to_file():
-    global stored_clones
-    with open(save_route, "w", encoding='utf-8') as f:
-        json.dump(stored_clones, f, ensure_ascii=False, indent=4)
-
-def read_file():
-    global stored_clones
-    with open(save_route, "r") as f:
-        stored_clones = json.load(f)
+    save_to_file()
 
 def check_result(clones_to_check, should_print = False):
 
@@ -102,8 +115,6 @@ def check_result(clones_to_check, should_print = False):
                                 print(f"You will have to attempt the cross breed until gene {index+1} comes out as {priority[item]}.")
                             possible_failures_inside += 1
                             break
-        if should_print != False:
-            print(clone_result)
         return(clone_result, possible_failures_inside)
 
     global weighting
@@ -163,33 +174,41 @@ def iterate_over_current_list():
     global goal
     read_file()
     combinations_to_check = []
-    for clone_amount in range(2, 6):
+    for clone_amount in range(1, 6):
         for combination in itertools.combinations(stored_clones, clone_amount):
             combinations_to_check.append(combination)
+    if len(combinations_to_check) == 0:
+        print("You can't calculate the results of an empty save file.")
+        return
     ordered_goal = []
     for gene in goal:
         if goal[gene] > 0:
             for repetition in range(goal[gene]):
                 ordered_goal.append(gene)
-
     ordered_goal.sort()
     achieved_goal_with = []
     number_of_failures = []
     print(f"Checking {len(combinations_to_check)} possible combinations...")
 
     for index, combination in enumerate(combinations_to_check):
-        printProgressBar(index + 1, len(combinations_to_check), prefix = 'Checked combinations:', suffix = 'Complete', length=20, printEnd="\r")
+        printProgressBar(index + 1, len(combinations_to_check), prefix = 'Progress:', suffix = 'Complete', length=20, printEnd="\r")
         current_result, current_amount_of_failures = check_result(combination)
         current_result.sort()
         if current_result == ordered_goal:
             achieved_goal_with.append(combination)
             number_of_failures.append(current_amount_of_failures)
-    
+        if  current_result == ordered_goal and current_amount_of_failures == 0:
+            print("")
+            print("Ideal clone found early.")
+            break
     print()
-    print("Best result foound with clones:")
+    if len(achieved_goal_with) == 0:
+        print("Couldn't achieve an ideal clone with current stored clones. Keep storing more.")
+        return
+    print("Best results found with clones:")
     min_failures = min(number_of_failures)
     index_of_min_failures = number_of_failures.index(min_failures)
     for clones in achieved_goal_with[index_of_min_failures]:
         print(clones)
     print("Cross-breeding result: ")
-    print(check_result(achieved_goal_with[index_of_min_failures], True))
+    print(check_result(achieved_goal_with[index_of_min_failures], should_print=True))
