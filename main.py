@@ -8,10 +8,11 @@ while True:
     print("2. Calculate crossbreed.")
     print("3. Change goal.")
     print("4. Help and information.")
+    print("5. View currently stored clones.")
     print("")
     try:
-        selection = int(input("Input menu selection (1-4): "))
-        if selection > 4 or selection < 1:
+        selection = int(input("Input menu selection (1-5): "))
+        if selection >= 5 or selection < 1:
             raise ValueError
         print("")
     except ValueError:
@@ -23,5 +24,7 @@ while True:
         iterate_over_current_list()
     elif selection == 3:
         change_goal()
-    else:
+    elif selection == 4:
         print_help()
+    elif selection == 5:
+        view_current_list()

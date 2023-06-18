@@ -231,8 +231,8 @@ def iterate_over_current_list():
     ordered_goal.sort()
     achieved_goal_with = []
     number_of_failures = []
+    good_combinations = []
     print(f"Checking {len(combinations_to_check)} possible combinations...")
-
     for index, combination in enumerate(combinations_to_check):
         printProgressBar(index + 1, len(combinations_to_check), prefix = 'Progress:', suffix = 'Complete', length=20, printEnd="\r")
         current_result, current_amount_of_failures = check_result(combination)
@@ -240,6 +240,13 @@ def iterate_over_current_list():
         if current_result == ordered_goal:
             achieved_goal_with.append(combination)
             number_of_failures.append(current_amount_of_failures)
+        else:
+            score = 0
+            for gene in current_result:
+                if gene in gene_types["green"]:
+                    score += 1
+            if score > 5:
+                good_combinations.append(combination)
         if  current_result == ordered_goal and current_amount_of_failures == 0:
             print("")
             print("Ideal clone found early.")
@@ -247,6 +254,11 @@ def iterate_over_current_list():
     print()
     if len(achieved_goal_with) == 0:
         print("Couldn't achieve an ideal clone with current stored clones. Keep storing more.")
+        if len(good_combinations) > 0:
+            print("However, these combinations are good enough to be crossbred and stored: ")
+            for combination in good_combinations:
+                print(combination, end=" => ")
+                print(check_result(combination, should_print=True))
         return
     print("Best results found with clones:")
     min_failures = min(number_of_failures)
@@ -255,3 +267,9 @@ def iterate_over_current_list():
         print(clones)
     print("Cross-breeding result: ")
     print(check_result(achieved_goal_with[index_of_min_failures], should_print=True))
+
+def view_current_list():
+    read_file()
+    print("Current stored clones: ")
+    for clone in stored_clones:
+        print(clone)
