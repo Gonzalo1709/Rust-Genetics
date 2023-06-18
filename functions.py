@@ -214,59 +214,77 @@ def check_result(clones_to_check, should_print = False):
 # with priority check result is ['y', 'w', 'g', 'y', 'h', 'x']
 
 def iterate_over_current_list():
-    global goal
-    read_file()
-    combinations_to_check = []
-    for clone_amount in range(1, 6):
-        for combination in itertools.combinations(stored_clones, clone_amount):
-            combinations_to_check.append(combination)
-    if len(combinations_to_check) == 0:
-        print("You can't calculate the results of an empty save file.")
+    print("How many generations do you want to iterate over?")
+    generations = int(input("Beware that RAM requirements increase exponentially. 2 is max recommended for 16GB ram. (1>): "))
+    while generations < 1:
+        print("Invalid input.")
+        generations = int(input("How many generations do you want to iterate over? (1>): ")) 
+    results_from_generations = []
+    for generation in range(generations):
+        print(f"\nGeneration {generation+1}:")
+        global goal
+        read_file()
+        combinations_to_check = []
+        available_clones = stored_clones.copy()
+        if len(results_from_generations) > 0:
+            available_clones = available_clones + results_from_generations
+        print(f"Building combinations from {len(available_clones)} clones...")
+        for clone_amount in range(1, 6):
+            for combination in itertools.combinations(available_clones, clone_amount):
+                combinations_to_check.append(combination)
+        if len(combinations_to_check) == 0:
+            print("You can't calculate the results of an empty save file.")
+            return
+        ordered_goal = []
+        for gene in goal:
+            if goal[gene] > 0:
+                for repetition in range(goal[gene]):
+                    ordered_goal.append(gene)
+        ordered_goal.sort()
+        achieved_goal_with = []
+        number_of_failures = []
+        good_combinations = []
+        print(f"Checking {len(combinations_to_check)} possible combinations...")
+        for index, combination in enumerate(combinations_to_check):
+            printProgressBar(index + 1, len(combinations_to_check), prefix = 'Progress:', suffix = 'Complete', length=20, printEnd="\r")
+            current_result, current_amount_of_failures = check_result(combination)
+            current_result.sort()
+            if current_result == ordered_goal:
+                achieved_goal_with.append(combination)
+                number_of_failures.append(current_amount_of_failures)
+            else:
+                score = 0
+                for gene in current_result:
+                    if gene in gene_types["green"]:
+                        score += 1
+                if score > 5:
+                    good_combinations.append(combination)
+                if score > 4:
+                    results_from_generations.append(current_result)
+            if current_result == ordered_goal and current_amount_of_failures == 0:
+                print("")
+                print("Ideal clone found early.")
+                break
+        print()
+        if len(achieved_goal_with) == 0:
+            messgae_end = "Moving on to next generation.\n"
+            if generation == generations - 1:
+                messgae_end = "Keep storing more.\n"
+            print("Couldn't achieve an ideal clone with current stored clones. ", end=messgae_end)
+            if len(good_combinations) > 0 and generations == 1:
+                print("However, these combinations are good enough to be crossbred and stored: ")
+                for combination in good_combinations:
+                    print(combination, end=" => ")
+                    print(check_result(combination, should_print=True))
+            continue
+        print("Best results found with clones:")
+        min_failures = min(number_of_failures)
+        index_of_min_failures = number_of_failures.index(min_failures)
+        for clones in achieved_goal_with[index_of_min_failures]:
+            print(clones)
+        print("Cross-breeding result: ")
+        print(check_result(achieved_goal_with[index_of_min_failures], should_print=True))
         return
-    ordered_goal = []
-    for gene in goal:
-        if goal[gene] > 0:
-            for repetition in range(goal[gene]):
-                ordered_goal.append(gene)
-    ordered_goal.sort()
-    achieved_goal_with = []
-    number_of_failures = []
-    good_combinations = []
-    print(f"Checking {len(combinations_to_check)} possible combinations...")
-    for index, combination in enumerate(combinations_to_check):
-        printProgressBar(index + 1, len(combinations_to_check), prefix = 'Progress:', suffix = 'Complete', length=20, printEnd="\r")
-        current_result, current_amount_of_failures = check_result(combination)
-        current_result.sort()
-        if current_result == ordered_goal:
-            achieved_goal_with.append(combination)
-            number_of_failures.append(current_amount_of_failures)
-        else:
-            score = 0
-            for gene in current_result:
-                if gene in gene_types["green"]:
-                    score += 1
-            if score > 5:
-                good_combinations.append(combination)
-        if  current_result == ordered_goal and current_amount_of_failures == 0:
-            print("")
-            print("Ideal clone found early.")
-            break
-    print()
-    if len(achieved_goal_with) == 0:
-        print("Couldn't achieve an ideal clone with current stored clones. Keep storing more.")
-        if len(good_combinations) > 0:
-            print("However, these combinations are good enough to be crossbred and stored: ")
-            for combination in good_combinations:
-                print(combination, end=" => ")
-                print(check_result(combination, should_print=True))
-        return
-    print("Best results found with clones:")
-    min_failures = min(number_of_failures)
-    index_of_min_failures = number_of_failures.index(min_failures)
-    for clones in achieved_goal_with[index_of_min_failures]:
-        print(clones)
-    print("Cross-breeding result: ")
-    print(check_result(achieved_goal_with[index_of_min_failures], should_print=True))
 
 def view_current_list():
     read_file()

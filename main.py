@@ -12,7 +12,7 @@ while True:
     print("")
     try:
         selection = int(input("Input menu selection (1-5): "))
-        if selection >= 5 or selection < 1:
+        if selection > 5 or selection < 1:
             raise ValueError
         print("")
     except ValueError:
